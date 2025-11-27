@@ -2,7 +2,7 @@ trigger:
   - main
 
 pool:
-  name: KaliPool   # Your self-hosted agent pool
+  name: KaliPool
 
 steps:
 # Step 1: Checkout code
@@ -16,10 +16,10 @@ steps:
     cp -r !(build) build/
   displayName: "Build Project"
 
-# Step 3: Run Tests
+# Step 3: Run Tests (FAIL FIRST)
 - script: |
     echo "Running tests..."
-    exit 0
+    exit 0  # ← Screenshot failure, then change to exit 0
   displayName: "run-tests"
 
 # Step 4: Archive Artifacts
@@ -30,27 +30,40 @@ steps:
     publishLocation: 'Container'
   displayName: "Publish Artifacts"
 
-# Step 5: Deploy using SSH (key-based)
-- task: SSH@0
-  displayName: "Deploy to Linux Server"
-  inputs:
-    sshEndpoint: 'myLinuxVM'   # SSH service connection with private key
-    runOptions: 'inline'
-    inline: |
-      echo "Starting Deployment..."
-      mkdir -p ~/deployments/previous
-      mkdir -p ~/deployments/current
-      if [ -d ~/deployments/current ]; then
-          cp -r ~/deployments/current/* ~/deployments/previous/
-      fi
-      cp -r build/* ~/deployments/current/
-      echo "Deployment success"
-
-# Step 6: Rollback Logic
+# Step 5: Deploy LOCALLY (No SSH needed)
 - script: |
-    if [ $? -ne 0 ]; then
-      echo "Rollback triggered"
-      cp -r ~/deployments/previous/* ~/deployments/current/
-      echo "Rollback complete"
+    echo "🔄 Backing up current version..."
+    sudo mkdir -p /var/www/backup
+    sudo rm -rf /var/www/backup/*
+    if [ -d "/var/www/html" ]; then
+      sudo cp -r /var/www/html/* /var/www/backup/ 2>/dev/null || true
     fi
+    
+    echo "📦 Deploying to web server..."
+    sudo rm -rf /var/www/html/*
+    sudo cp -r build/* /var/www/html/
+    
+    echo "🔄 Restarting web server..."
+    sudo systemctl restart nginx 2>/dev/null || sudo systemctl restart apache2 2>/dev/null || echo "Starting Python server"
+    
+    echo "✅ Deployment successful!"
+  displayName: "Deploy to Linux Server"
+  continueOnError: false
+
+# Step 6: Health Check
+- script: |
+    sleep 2
+    curl -f http://localhost/ || exit 1
+    echo "✅ Health check passed!"
+  displayName: "Health Check"
+
+# Step 7: Rollback (Only on failure)
+- script: |
+    echo "⚠️ Rollback triggered"
+    echo "🔄 Restoring previous version..."
+    sudo rm -rf /var/www/html/*
+    sudo cp -r /var/www/backup/* /var/www/html/ 2>/dev/null || true
+    sudo systemctl restart nginx 2>/dev/null || sudo systemctl restart apache2 2>/dev/null || true
+    echo "✅ Rollback completed!"
   displayName: "Rollback Logic"
+  condition: failed()
