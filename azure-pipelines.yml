@@ -2,7 +2,7 @@ trigger:
   - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: Default   # Use your self-hosted agent pool
 
 steps:
 # Step 1: Checkout code
@@ -11,14 +11,14 @@ steps:
 # Step 2: Build (for HTML nothing to build)
 - script: |
     echo "Build step - copying files"
-    mkdir build
+    mkdir -p build
     cp -r * build/
   displayName: "Build Project"
 
 # Step 3: Run Tests (initially fail → later fix)
 - script: |
     echo "Running tests..."
-    exit 1
+    exit 1   # This will fail first
   displayName: "run-tests"
 
 # Step 4: Archive Artifacts
@@ -33,7 +33,7 @@ steps:
 - task: SSH@0
   displayName: "Deploy to Linux Server"
   inputs:
-    sshEndpoint: 'myLinuxVM'
+    sshEndpoint: 'myLinuxVM'   # Use the service connection name you created
     runOptions: 'inline'
     inline: |
       echo "Starting Deployment..."
@@ -41,3 +41,11 @@ steps:
       cp -r * ~/deployments/current/
       echo "Deployment success"
 
+# Step 6: Rollback (example, simple logic)
+- script: |
+    if [ $? -ne 0 ]; then
+      echo "Rollback triggered"
+      cp -r ~/deployments/previous/* ~/deployments/current/
+      echo "Rollback complete"
+    fi
+  displayName: "Rollback if Deployment Fails"
