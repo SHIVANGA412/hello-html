@@ -1,0 +1,50 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+# Step 1: Checkout code
+- checkout: self
+
+# Step 2: Build (for HTML nothing to build)
+- script: |
+    echo "Build step - copying files"
+    mkdir build
+    cp -r * build/
+  displayName: "Build Project"
+
+# Step 3: Run Tests (initially fail → later fix)
+- script: |
+    echo "Running tests..."
+    exit 1
+  displayName: "run-tests"
+
+# Step 4: Archive Artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: 'build'
+    artifactName: 'webapp'
+    publishLocation: 'Container'
+  displayName: "Publish Artifacts"
+
+# Step 5: Deploy using SSH
+- task: SSH@0
+  displayName: "Deploy to Linux Server"
+  inputs:
+    sshEndpoint: 'myLinuxVM'
+    runOptions: 'inline'
+    inline: |
+      echo "Starting Deployment..."
+      mkdir -p ~/deployments/current
+      cp -r * ~/deployments/current/
+      echo "Deployment success"
+
+# Step 6: Rollback if deployment fails
+- script: |
+    echo "Rollback triggered"
+    rm -rf ~/deployments/current
+    cp -r ~/deployments/previous ~/deployments/current
+  displayName: "Rollback Logic"
+  condition: failed()
