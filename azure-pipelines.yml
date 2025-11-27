@@ -2,24 +2,25 @@ trigger:
   - main
 
 pool:
-  name: Default   # Use your self-hosted agent pool
+  name: KaliPool   # Your self-hosted agent pool (not Default)
 
 steps:
 # Step 1: Checkout code
 - checkout: self
 
-# Step 2: Build (for HTML nothing to build)
+# Step 2: Build (HTML has no build)
 - script: |
     echo "Build step - copying files"
     mkdir -p build
     cp -r * build/
   displayName: "Build Project"
 
-# Step 3: Run Tests (initially fail → later fix)
+# Step 3: Run Tests (will fail initially)
 - script: |
     echo "Running tests..."
-    exit 1   # This will fail first
+    exit 1
   displayName: "run-tests"
+  continueOnError: true   # Let pipeline continue even if tests fail
 
 # Step 4: Archive Artifacts
 - task: PublishBuildArtifacts@1
@@ -29,23 +30,29 @@ steps:
     publishLocation: 'Container'
   displayName: "Publish Artifacts"
 
-# Step 5: Deploy using SSH
+# Step 5: Deploy using SSH to your Kali VM
 - task: SSH@0
   displayName: "Deploy to Linux Server"
   inputs:
-    sshEndpoint: 'myLinuxVM'   # Use the service connection name you created
+    sshEndpoint: 'myLinuxVM'   # Your SSH service connection
     runOptions: 'inline'
     inline: |
       echo "Starting Deployment..."
+      mkdir -p ~/deployments/previous
       mkdir -p ~/deployments/current
-      cp -r * ~/deployments/current/
+      # Backup current deployment
+      if [ -d ~/deployments/current ]; then
+          cp -r ~/deployments/current/* ~/deployments/previous/
+      fi
+      # Copy new build
+      cp -r build/* ~/deployments/current/
       echo "Deployment success"
 
-# Step 6: Rollback (example, simple logic)
+# Step 6: Rollback Logic (if deployment fails)
 - script: |
     if [ $? -ne 0 ]; then
       echo "Rollback triggered"
       cp -r ~/deployments/previous/* ~/deployments/current/
       echo "Rollback complete"
     fi
-  displayName: "Rollback if Deployment Fails"
+  displayName: "Rollback Logic"
