@@ -2,11 +2,13 @@ trigger:
   - main
 
 pool:
-  name: KaliPool
+  name: KaliPool   # Your self-hosted agent pool
 
 steps:
+# Step 1: Checkout code
 - checkout: self
 
+# Step 2: Build
 - script: |
     echo "Build step - copying files"
     mkdir -p build
@@ -14,11 +16,13 @@ steps:
     cp -r !(build) build/
   displayName: "Build Project"
 
+# Step 3: Run Tests
 - script: |
     echo "Running tests..."
     exit 0
   displayName: "run-tests"
 
+# Step 4: Archive Artifacts
 - task: PublishBuildArtifacts@1
   inputs:
     pathToPublish: 'build'
@@ -26,10 +30,11 @@ steps:
     publishLocation: 'Container'
   displayName: "Publish Artifacts"
 
+# Step 5: Deploy using SSH (key-based)
 - task: SSH@0
   displayName: "Deploy to Linux Server"
   inputs:
-    sshEndpoint: myLinuxVM   # using username + password
+    sshEndpoint: 'myLinuxVM'   # SSH service connection with private key
     runOptions: 'inline'
     inline: |
       echo "Starting Deployment..."
@@ -41,6 +46,7 @@ steps:
       cp -r build/* ~/deployments/current/
       echo "Deployment success"
 
+# Step 6: Rollback Logic
 - script: |
     if [ $? -ne 0 ]; then
       echo "Rollback triggered"
