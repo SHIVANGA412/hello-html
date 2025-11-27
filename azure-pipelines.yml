@@ -1,5 +1,5 @@
 trigger:
-- main
+  - main
 
 pool:
   vmImage: ubuntu-latest
@@ -41,10 +41,3 @@ steps:
       cp -r * ~/deployments/current/
       echo "Deployment success"
 
-# Step 6: Rollback if deployment fails
-- script: |
-    echo "Rollback triggered"
-    rm -rf ~/deployments/current
-    cp -r ~/deployments/previous ~/deployments/current
-  displayName: "Rollback Logic"
-  condition: failed()
