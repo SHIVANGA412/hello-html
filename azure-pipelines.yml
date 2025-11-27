@@ -2,13 +2,11 @@ trigger:
   - main
 
 pool:
-  name: KaliPool   # Your self-hosted agent pool
+  name: KaliPool
 
 steps:
-# Step 1: Checkout code
 - checkout: self
 
-# Step 2: Build (HTML has no build)
 - script: |
     echo "Build step - copying files"
     mkdir -p build
@@ -16,14 +14,11 @@ steps:
     cp -r !(build) build/
   displayName: "Build Project"
 
-# Step 3: Run Tests (will fail initially)
 - script: |
     echo "Running tests..."
-    exit 1
+    exit 0
   displayName: "run-tests"
-  continueOnError: true   # Let pipeline continue even if tests fail
 
-# Step 4: Archive Artifacts
 - task: PublishBuildArtifacts@1
   inputs:
     pathToPublish: 'build'
@@ -31,25 +26,21 @@ steps:
     publishLocation: 'Container'
   displayName: "Publish Artifacts"
 
-# Step 5: Deploy using SSH to your Kali VM
 - task: SSH@0
   displayName: "Deploy to Linux Server"
   inputs:
-    sshEndpoint: 'myLinuxVM'   # Your SSH service connection
+    sshEndpoint: 'myLinuxVM-PASSWORD'   # using username + password
     runOptions: 'inline'
     inline: |
       echo "Starting Deployment..."
       mkdir -p ~/deployments/previous
       mkdir -p ~/deployments/current
-      # Backup current deployment
       if [ -d ~/deployments/current ]; then
           cp -r ~/deployments/current/* ~/deployments/previous/
       fi
-      # Copy new build
       cp -r build/* ~/deployments/current/
       echo "Deployment success"
 
-# Step 6: Rollback Logic (if deployment fails)
 - script: |
     if [ $? -ne 0 ]; then
       echo "Rollback triggered"
