@@ -2,7 +2,7 @@ trigger:
   - main
 
 pool:
-  name: KaliPool   # Your self-hosted agent pool (not Default)
+  name: KaliPool   # Your self-hosted agent pool
 
 steps:
 # Step 1: Checkout code
@@ -12,7 +12,8 @@ steps:
 - script: |
     echo "Build step - copying files"
     mkdir -p build
-    cp -r * build/
+    shopt -s extglob
+    cp -r !(build) build/
   displayName: "Build Project"
 
 # Step 3: Run Tests (will fail initially)
