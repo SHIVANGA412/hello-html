@@ -1,5 +1,6 @@
 trigger:
   - main
+  #shivanga
 
 pool:
   vmImage: 'ubuntu-latest'  # ← FIXED: Microsoft hosted agent
