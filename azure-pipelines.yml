@@ -29,7 +29,7 @@ steps:
 - task: SSH@0
   displayName: "Deploy to Linux Server"
   inputs:
-    sshEndpoint: 'myLinuxVM-PASSWORD'   # using username + password
+    sshEndpoint: myLinuxVM   # using username + password
     runOptions: 'inline'
     inline: |
       echo "Starting Deployment..."
