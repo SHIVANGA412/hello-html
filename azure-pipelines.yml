@@ -21,7 +21,7 @@ steps:
 - script: |
     echo "🧪 Running tests..."
     echo "All tests PASSED ✅"
-    exit 0
+    exit 1
   displayName: "Run Tests"
 
 # Step 4: Publish Artifacts
