@@ -2,15 +2,15 @@ trigger:
   - main
 
 pool:
-  name: KaliPool  # YOUR KaliVM agent
+  name: KaliPool  
 
 steps:
-# Step 1: Checkout code
+
 - checkout: self
 
-# Step 2: Build
+
 - script: |
-    echo "🔨 Build step - copying files to build/"
+    echo " Build step - copying files to build/"
     mkdir -p build
     shopt -s extglob
     cp -r !(build) build/
@@ -19,12 +19,12 @@ steps:
 
 # Step 3: Run Tests (SUCCESS)
 - script: |
-    echo "🧪 Running tests..."
-    echo "All tests PASSED ✅"
+    echo " Running tests..."
+    echo "All tests PASSED "
     exit 0
   displayName: "Run Tests"
 
-# Step 4: Publish Artifacts
+
 - task: PublishBuildArtifacts@1
   inputs:
     pathToPublish: 'build'
@@ -32,24 +32,23 @@ steps:
     publishLocation: 'Container'
   displayName: "Publish Artifacts"
 
-# Step 5: Deploy to /var/www/html
+
 - script: |
-    echo "🚀 Deploying to /var/www/html..."
+    echo " Deploying to /var/www/html..."
     sudo mkdir -p /var/www/html
     sudo cp -r build/* /var/www/html/
     sudo chown -R www-data:www-data /var/www/html/
-    echo "✅ Deployment successful!"
+    echo " Deployment successful!"
   displayName: "Deploy to Linux Server"
 
-# Step 6: Health Check
+
 - script: |
-    echo "🔍 Health check..."
+    echo " Health check..."
     curl -f http://localhost/ || echo "Local server not running - demo only"
-    echo "✅ Health check PASSED!"
+    echo " Health check PASSED!"
   displayName: "Health Check"
 
-# Step 7: Rollback (only on failure)
 - script: |
-    echo "🔄 Rollback executed (backup from artifacts)"
+    echo "Rollback executed (backup from artifacts)"
   displayName: "Rollback Logic"
   condition: failed()
